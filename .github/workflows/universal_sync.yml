@@ -61,8 +61,14 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTION_TOKEN: ${{ secrets.ACTION_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          # ✅ 新增：显式传入当前仓库名（例如 Romeo），供 Shell 脚本内部使用
+          CURRENT_REPO_NAME: ${{ github.event.repository.name }}
         run: |
-          target_script=".remote_logic/Scripts/Romeo/${{ matrix.author }}.sh"
+          # ✅ 路径完全动态化：.remote_logic/Scripts/Romeo/xxx.sh
+          target_script=".remote_logic/Scripts/${{ github.event.repository.name }}/${{ matrix.author }}.sh"
+          
           if [ -f "$target_script" ]; then
             chmod +x "$target_script"
             sleep $((RANDOM % 10))
@@ -88,24 +94,13 @@ jobs:
           path: .remote_logic
           token: ${{ secrets.ACTION_TOKEN }}
 
-      - name: Run Sync Script
-        if: steps.check.outputs.skip != 'true'
+      - name: Run Merge Script
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACTION_TOKEN: ${{ secrets.ACTION_TOKEN }}
-          REPO_OWNER: ${{ github.repository_owner }}
-          CURRENT_REPO_NAME: ${{ github.event.repository.name }}
         run: |
-          target_script=".remote_logic/Scripts/${{ github.event.repository.name }}/${{ matrix.author }}.sh"
-          
-          if [ -f "$target_script" ]; then
-            chmod +x "$target_script"
-            sleep $((RANDOM % 10))
-            bash "$target_script"
-          else
-            echo "❌ Script not found: $target_script"
-            exit 1
-          fi
+          target_script=".remote_logic/Scripts/Romeo/merge_modules.sh"
+          chmod +x "$target_script"
+          bash "$target_script"
 
   cleanup:
     needs: final-merge
